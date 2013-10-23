@@ -5,6 +5,7 @@ interface IDatabase {
 	function addUser($username, $hashedPassword);
 	function deactivateUser($username);
 	function getSpaceAvailable($username);
+	function isActive($username);
 	
 	function addEntity($entity, $token);
 	function getEntityKeys($token);
