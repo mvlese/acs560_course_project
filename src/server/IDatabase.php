@@ -3,8 +3,8 @@ interface IDatabase {
 	function getPassword($username);
 	function setPassword($username, $hashedPassword);
 	function addUser($username, $hashedPassword);
-	function deactivateUser($username, $hashedPassword);
-	function getSpaceAvailable($usernme);
+	function deactivateUser($username);
+	function getSpaceAvailable($username);
 	
 	function addEntity($entity, $token);
 	function getEntityKeys($token);

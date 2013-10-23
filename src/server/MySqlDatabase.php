@@ -10,13 +10,13 @@ class MySqlDatabase implements IDatabase {
 	
 	function getPassword($username) {
 		$rslt = '';
-		$sql = sprintf("select password from users where username = '%s'", strtoupper(trim($username)));
+		$sql = sprintf("select pw from users where is_active=1 and username = '%s'", $this->getUsername($username));
 		$this->connect();
 		$mysql_result = mysql_query($sql, $this->db);
 		if ($mysql_result == FALSE) {
 		} else {
 			$arr = mysql_fetch_array($mysql_result);
-			$rslt = $arr['password'];
+			$rslt = $arr['pw'];
 		}
 		$this->disconnect();
 		return $rslt;
@@ -25,8 +25,8 @@ class MySqlDatabase implements IDatabase {
 	function setPassword($username, $hashedPassword) {
 		$rslt = -1;
 		# TODO - Do we need to lock the table?
-		$sql = sprintf("update users set password = '%s' where username = '%s'", 
-			$hashedPassword, strtoupper(trim($username)));
+		$sql = sprintf("update users set pw = '%s' where username = '%s'", 
+			$hashedPassword, $this->getUsername($username));
 		$this->connect();
 		$mysql_result = mysql_query($sql, $this->db);
 		if ($mysql_result == FALSE) {
@@ -42,10 +42,10 @@ class MySqlDatabase implements IDatabase {
 	function addUser($username, $hashedPassword) {
 		$this->connect();
 		
-		mysql_query(sprintf("set @username = '%s'", $username), $this->db);
-		mysql_query(sprintf("set @hashedPassword = '%s'", $hashedPassword), $this->db);
-		mysql_query("set @o_status = ''", $this->db);
-		mysql_query("CALL addUser(@username, @hashedPassword, @o_status)", $this->db);
+		$rslt = mysql_query(sprintf("set @username = '%s'", $this->getUsername($username)), $this->db);
+		$rslt = mysql_query(sprintf("set @hashedPassword = '%s'", $hashedPassword), $this->db);
+		$rslt = mysql_query("set @o_status = ''", $this->db);
+		$rslt = mysql_query("CALL addUser(@username, @hashedPassword, @o_status)", $this->db);
 		$res = mysql_query("SELECT @o_status as _p_out", $this->db);
 		$row = mysql_fetch_array($res);
 		$rslt = $row['_p_out'];
@@ -56,25 +56,53 @@ class MySqlDatabase implements IDatabase {
 	}
 	
 	
-	function deactivateUser($username, $hashedPassword) {
-		
-	}
-	
-	function getSpaceAvailable($usernme) {
-		
+	function deactivateUser($username) {
 		$this->connect();
-		$sql = 'select * from parameters';
+		$rslt = -1;
+		$sql = sprintf("update users set is_active=0 where username = '%s'", $this->getUsername($username));
 		$mysql_result = mysql_query($sql, $this->db);
-		if ($mysql_result == FALSE) {
-		} else {
-			$arr = mysql_fetch_array($mysql_result);
-			$rslt = intval($arr['default_space_mb']);
+		if ($mysql_result != FALSE) {
+			$rslt = 0;
 		}
 		$this->disconnect();
 		
 		return $rslt;
 	}
+	
+	function getSpaceAvailable($username) {
+		$rslt = 0;	
+		$this->connect();
 		
+		$sql = sprintf("select space_remaining_kb from users where is_active=1 and username = '%s'", $this->getUsername($username));
+		$mysql_result = mysql_query($sql, $this->db);
+		if ($mysql_result == FALSE) {
+		} else {
+			$arr = mysql_fetch_array($mysql_result);
+			$rslt = intval($arr['space_remaining_kb']);
+		}
+		
+		$this->disconnect();
+		
+		return $rslt;
+	}
+
+	function isActive($username) {
+		$rslt = false;	
+		$this->connect();
+		
+		$sql = sprintf("select is_active from users where username = '%s'", $this->getUsername($username));
+		$mysql_result = mysql_query($sql, $this->db);
+		if ($mysql_result == FALSE) {
+		} else {
+			$arr = mysql_fetch_array($mysql_result);
+			$rslt = (intval($arr['is_active']) == 1) ? true : false;
+		}
+		
+		$this->disconnect();
+		
+		return $rslt;
+	}
+
 	function addEntity($entity, $token) {
 		
 	}
@@ -131,8 +159,12 @@ class MySqlDatabase implements IDatabase {
 	}
 	
 	private function connect() {
-	  $this->db = mysql_connect("localhost:3306", "root", "P@ssw0rd");
-	  mysql_select_db("jot", $this->db);
+		$link = mysql_connect("localhost:3306", "acs560", "acs560@se");
+		if (!$link) {
+		} else {
+			$this->db = $link;
+	  		mysql_select_db("jot", $this->db);
+		}
 	}
 	
 	private function disconnect() {
@@ -140,5 +172,8 @@ class MySqlDatabase implements IDatabase {
 	  $this->db = null;		
 	}
 	
+	private function getUsername($username) { 
+		return strtoupper(trim($username));
+	}
 }
 ?>

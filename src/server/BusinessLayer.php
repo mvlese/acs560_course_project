@@ -14,10 +14,12 @@ class BusinessLayer {
 		$rslt = false;
 		# retrieve hashed password from DB for this user
 		# validate $hashedPassword with arg
-		$hashedPassword = $this->db->getPassword($username);
-		if (strlen($hashedPassword) > 0) {
-			$rslt = Security::isValid($password, $hashedPassword);
-		}	
+		if ($this->db->isActive($username) == true) {
+			$hashedPassword = $this->db->getPassword($username);
+			if (strlen($hashedPassword) > 0) {
+				$rslt = Security::isValid($password, $hashedPassword);
+			}	
+		}
 		return $rslt;
 	}
 	
@@ -37,6 +39,23 @@ class BusinessLayer {
 			$token = $this->db->addUser($username, $hashedPassword);
 		}
 		return $token;
+	}
+	
+	function deactivateUser($username, $password) {
+		if ($this->isUserValid($username, $password)) {
+			$this->db->deactivateUser($username);
+		}
+	}
+		
+	function getSpaceRemainingKbForUser($username, $password) {
+		$rslt = 0;
+		if ($this->db->isActive($username) == true) {
+			if ($this->isUserValid($username, $password)) {
+				$rslt = $this->db->getSpaceAvailable($username);
+			}
+		}
+		
+		return $rslt;
 	}
 }
 ?>
