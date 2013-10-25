@@ -10,41 +10,54 @@ class BusinessLayer {
 		$this->db = DBFactory::getDatabase();
 	}
 	
-	function isUserValid($username, $password) {
-		$rslt = false;
-		# retrieve hashed password from DB for this user
-		# validate $hashedPassword with arg
-		if ($this->db->isActive($username) == true) {
-			$hashedPassword = $this->db->getPassword($username);
-			if (strlen($hashedPassword) > 0) {
-				$rslt = Security::isValid($password, $hashedPassword);
-			}	
+	function logon($username, $password) {
+		$rslt = '';
+		# Do not check isActive flag.  If the user attempts
+		# to logon, he is active.
+		if ($this->isUserValid($username, $password, true)) {
+			$iRslt = $this->db->setActive($username, 1);
+			if ($iRslt == 0) {
+				$token = $this->db->createTokenForUser($username);
+				$rslt = $token;
+			}
 		}
 		return $rslt;
 	}
 	
 	function setNewPassword($username, $oldPassword, $newPassword) {
+		$rslt = -1;
+		
 		if ($this->isUserValid($username, $oldPassword)) {
 			$hashedPassword = Security::encryptPassword($newPassword);
 			$rslt = $this->db->setPassword($username, $hashedPassword);
 		}
+		
+		return $rslt;
 	}
 	
-	function addUser($username, $password) {
-		$token = -7;
+	function registerNewUser($username, $password) {
+		$rslt = '';
 		$hashedPassword = $this->db->getPassword($username);
 		if (strlen($hashedPassword) == 0) {
 			# no user, so add this one
 			$hashedPassword = Security::encryptPassword($password);
-			$token = $this->db->addUser($username, $hashedPassword);
+			$rslt = $this->db->addUser($username, $hashedPassword);
+			if ($rslt == 0) {
+				$token = $this->db->createTokenForUser($username);
+				$rslt = $token;
+			}
 		}
-		return $token;
+		
+		return $rslt;
 	}
 	
-	function deactivateUser($username, $password) {
+	function deactivateUser($token, $username, $password) {
+		$rslt = -1;
 		if ($this->isUserValid($username, $password)) {
-			$this->db->deactivateUser($username);
+			$rslt = $this->db->deactivateUser($username, $token);
 		}
+		
+		return $rslt;
 	}
 		
 	function getSpaceRemainingKbForUser($username, $password) {
@@ -57,5 +70,19 @@ class BusinessLayer {
 		
 		return $rslt;
 	}
+
+	private function isUserValid($username, $password, $doNotCheckIsActive = false) {
+		$rslt = false;
+		# retrieve hashed password from DB for this user
+		# validate $hashedPassword with arg
+		if ($doNotCheckIsActive || ($this->db->isActive($username) == true)) {
+			$hashedPassword = $this->db->getPassword($username);
+			if (strlen($hashedPassword) > 0) {
+				$rslt = Security::isValid($password, $hashedPassword);
+			}	
+		}
+		return $rslt;
+	}
+	
 }
 ?>

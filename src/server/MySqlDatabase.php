@@ -10,7 +10,7 @@ class MySqlDatabase implements IDatabase {
 	
 	function getPassword($username) {
 		$rslt = '';
-		$sql = sprintf("select pw from users where is_active=1 and username = '%s'", $this->getUsername($username));
+		$sql = sprintf("select pw from users where username = '%s'", $username);
 		$this->connect();
 		$mysql_result = mysql_query($sql, $this->db);
 		if ($mysql_result == FALSE) {
@@ -26,7 +26,7 @@ class MySqlDatabase implements IDatabase {
 		$rslt = -1;
 		# TODO - Do we need to lock the table?
 		$sql = sprintf("update users set pw = '%s' where username = '%s'", 
-			$hashedPassword, $this->getUsername($username));
+			$hashedPassword, $username);
 		$this->connect();
 		$mysql_result = mysql_query($sql, $this->db);
 		if ($mysql_result == FALSE) {
@@ -42,24 +42,24 @@ class MySqlDatabase implements IDatabase {
 	function addUser($username, $hashedPassword) {
 		$this->connect();
 		
-		$rslt = mysql_query(sprintf("set @username = '%s'", $this->getUsername($username)), $this->db);
+		$rslt = mysql_query(sprintf("set @username = '%s'", $username), $this->db);
 		$rslt = mysql_query(sprintf("set @hashedPassword = '%s'", $hashedPassword), $this->db);
 		$rslt = mysql_query("set @o_status = ''", $this->db);
 		$rslt = mysql_query("CALL addUser(@username, @hashedPassword, @o_status)", $this->db);
 		$res = mysql_query("SELECT @o_status as _p_out", $this->db);
 		$row = mysql_fetch_array($res);
-		$rslt = $row['_p_out'];
-
+		$rslt = intval($row['_p_out']);
 		$this->disconnect();
 		
-		return $rslt;
+		return $retval;
 	}
 	
 	
-	function deactivateUser($username) {
+	function deactivateUser($username, $token) {
 		$this->connect();
 		$rslt = -1;
-		$sql = sprintf("update users set is_active=0 where username = '%s'", $this->getUsername($username));
+		$sql = sprintf("update users set is_active=0 where username = '%s' and token='%s'",
+				$username, $token);
 		$mysql_result = mysql_query($sql, $this->db);
 		if ($mysql_result != FALSE) {
 			$rslt = 0;
@@ -73,7 +73,7 @@ class MySqlDatabase implements IDatabase {
 		$rslt = 0;	
 		$this->connect();
 		
-		$sql = sprintf("select space_remaining_kb from users where is_active=1 and username = '%s'", $this->getUsername($username));
+		$sql = sprintf("select space_remaining_kb from users where is_active=1 and username = '%s'", $username);
 		$mysql_result = mysql_query($sql, $this->db);
 		if ($mysql_result == FALSE) {
 		} else {
@@ -90,7 +90,7 @@ class MySqlDatabase implements IDatabase {
 		$rslt = false;	
 		$this->connect();
 		
-		$sql = sprintf("select is_active from users where username = '%s'", $this->getUsername($username));
+		$sql = sprintf("select is_active from users where username = '%s'", $username);
 		$mysql_result = mysql_query($sql, $this->db);
 		if ($mysql_result == FALSE) {
 		} else {
@@ -102,7 +102,36 @@ class MySqlDatabase implements IDatabase {
 		
 		return $rslt;
 	}
-
+	
+	function setActive($username, $isActive) {
+		$rslt = -1;
+		$this->connect();
+		
+		$sql = sprintf("update users set is_active = %d where username = '%s'", $isActive, $username);
+		$mysql_result = mysql_query($sql, $this->db);
+		if ($mysql_result != FALSE) {
+			$rslt = 0;
+		}
+		
+		$this->disconnect();
+	}
+	
+	function createTokenForUser($username) {
+		$rslt = "";	
+		$this->connect();
+		
+		$rslt = mysql_query(sprintf("set @username = '%s'", $username), $this->db);
+		$rslt = mysql_query("set @o_token = ''", $this->db);
+		$rslt = mysql_query("CALL createTokenForUser(@username, @o_token)", $this->db);
+		$res = mysql_query("SELECT @o_token as _p_out", $this->db);
+		$row = mysql_fetch_array($res);
+		$rslt = $row['_p_out'];
+		
+		$this->disconnect();
+		
+		return $rslt;
+	}
+	
 	function addEntity($entity, $token) {
 		
 	}
@@ -172,8 +201,5 @@ class MySqlDatabase implements IDatabase {
 	  $this->db = null;		
 	}
 	
-	private function getUsername($username) { 
-		return strtoupper(trim($username));
-	}
 }
 ?>

@@ -37,9 +37,9 @@ class JotWsdl {
 			array('username' => 'xsd:string', 'password' => 'xsd:string'),
 			array('retval' => 'xsd:string'));
 		
-		$server->register('register',
+		$server->register('registerNewUser',
 			array('username' => 'xsd:string', 'password' => 'xsd:string'),
-			array('retval' => 'xsd:int'), 'urn:jot');
+			array('retval' => 'xsd:string'));
 		
 		$server->register('shareEntity',
 			array('token' => 'xsd:string', 'entity' => 'tns:Entity', 'toShareWithUsername' => 'xsd:string'),

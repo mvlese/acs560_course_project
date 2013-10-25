@@ -10,7 +10,8 @@ class Security {
 	
 	static function isValid($password, $hashedPassword) {
 		$rslt = false;
-		if (crypt($password, $hashedPassword) == $hashedPassword) {
+		$temp = crypt($password, $hashedPassword); 
+		if ($temp == $hashedPassword) {
 			$rslt = true;
 		}
 		return $rslt;

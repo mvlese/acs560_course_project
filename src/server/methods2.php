@@ -2,8 +2,15 @@
 include_once "EntityItem.php";
 include_once "Entity.php";
 include_once "EntityResult.php";
-
+include_once "BusinessLayer.php";
  
+function prepareValue($value, $setToUpper = false) {
+	$temp = trim($value);
+	if ($setToUpper == true) {
+		$temp = strtoupper($temp);
+	} 
+	return $temp;
+}
 
 #
 #
@@ -24,9 +31,10 @@ XML;
 #
 function changePassword($token, $newPassword)
 {
-  $retval = -1;
-
-  return $retval;
+	$retval = -1;
+	$businessLayer = new BusinessLayer();
+	
+	return $retval;
 }
 
 #
@@ -34,9 +42,40 @@ function changePassword($token, $newPassword)
 #
 function deleteAccount($token, $username, $password)
 {
-  $retval = -1;
+	$retval = -1;
+	$businessLayer = new BusinessLayer();
+	$retval = $businessLayer->deactivateUser(
+				prepareValue($token),
+				prepareValue($username, true),
+				prepareValue($password));
+	
+	return $retval;
+}
 
-  return $retval;
+#
+#
+#
+function logon($username, $password)
+{
+	$retval = "";
+	
+	$businessLayer = new BusinessLayer();
+	$retval = $businessLayer->logon(prepareValue($username, true), prepareValue($password));
+  
+	return $retval;
+}
+
+#
+#
+#
+function registerNewUser($username, $password)
+{
+  	$retval = "";
+
+	$businessLayer = new BusinessLayer();
+	$retval = $businessLayer->registerNewUser(prepareValue($username, true), prepareValue($password));
+  
+  	return $retval;
 }
 
 #
@@ -120,25 +159,6 @@ function getSharedEntity($token, $entity, $fromShareWithUsername)
   return $retval;
 }
 
-#
-#
-#
-function logon($username, $password)
-{
-  $retval = "atoken";
-
-  return $retval;
-}
-
-#
-#
-#
-function register($username, $password)
-{
-  $retval = -1;
-
-  return $retval;
-}
 
 #
 #
