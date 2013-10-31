@@ -5,129 +5,144 @@ class MySqlDatabase implements IDatabase {
 	
 	private $db = FALSE;
 	
-	function MysSqlDatabase() {
+	function __construct() {
+		$this->connect();
 	}
 	
 	function getPassword($username) {
 		$rslt = '';
-		$sql = sprintf("select pw from users where username = '%s'", $username);
-		$this->connect();
-		$mysql_result = mysql_query($sql, $this->db);
-		if ($mysql_result == FALSE) {
-		} else {
-			$arr = mysql_fetch_array($mysql_result);
+		
+		$params = array(':username' => $username);
+		try{
+			$sth = $this->db->prepare('select pw from users where username = :username');
+			$sth->execute($params);
+			$arr = $sth->fetch(PDO::FETCH_ASSOC);
 			$rslt = $arr['pw'];
+			$sth->closeCursor();
+		} catch(PDOException $e) {
+			$rslt = '';
 		}
-		$this->disconnect();
+
 		return $rslt;
 	}
 	
 	function setPassword($username, $hashedPassword) {
 		$rslt = -1;
 		# TODO - Do we need to lock the table?
-		$sql = sprintf("update users set pw = '%s' where username = '%s'", 
-			$hashedPassword, $username);
-		$this->connect();
-		$mysql_result = mysql_query($sql, $this->db);
-		if ($mysql_result == FALSE) {
-			# TBD
-		} else {
+		
+		$params = array(':username' => $username, ':pw' => $hashedPassword);
+		try{
+			$sth = $this->db->prepare('update users set pw = :pw where username = :username');
+			$sth->execute($params);
 			$rslt = 0;
+			$sth->closeCursor();
+		} catch(PDOException $e) {
+			$rslt = -1;
 		}
-		$this->disconnect();
+
 		return $rslt;
 	}
 	
 	
 	function addUser($username, $hashedPassword) {
-		$this->connect();
+		$retval = -1;
 		
-		$rslt = mysql_query(sprintf("set @username = '%s'", $username), $this->db);
-		$rslt = mysql_query(sprintf("set @hashedPassword = '%s'", $hashedPassword), $this->db);
-		$rslt = mysql_query("set @o_status = ''", $this->db);
-		$rslt = mysql_query("CALL addUser(@username, @hashedPassword, @o_status)", $this->db);
-		$res = mysql_query("SELECT @o_status as _p_out", $this->db);
-		$row = mysql_fetch_array($res);
-		$rslt = intval($row['_p_out']);
-		$this->disconnect();
+		try{
+			$token = "";
+			$params = array(':username' => $username, ':pw' => $hashedPassword);
+			$sth = $this->db->prepare("CALL addUser(:username, :pw, @o_status)");
+			$sth->execute($params);
+			$arr = $this->db->query("select @o_status as _p_out")->fetch(PDO::FETCH_ASSOC); 
+			$retval = intval($arr['_p_out']);
+			$sth->closeCursor();
+		} catch(PDOException $e) {
+			$retval = -1;
+		}
 		
 		return $retval;
 	}
 	
 	
 	function deactivateUser($username, $token) {
-		$this->connect();
 		$rslt = -1;
-		$sql = sprintf("update users set is_active=0 where username = '%s' and token='%s'",
-				$username, $token);
-		$mysql_result = mysql_query($sql, $this->db);
-		if ($mysql_result != FALSE) {
-			$rslt = 0;
-		}
-		$this->disconnect();
 		
+		$params = array(':username' => $username, ':token' => $token);
+		try{
+			$sth = $this->db->prepare('update users set is_active=0 where username = :username and token = :token');
+			$sth->execute($params);
+			$rslt = 0;
+			$sth->closeCursor();
+		} catch(PDOException $e) {
+			$rslt = -1;
+		}
+				
 		return $rslt;
 	}
 	
 	function getSpaceAvailable($username) {
 		$rslt = 0;	
-		$this->connect();
 		
-		$sql = sprintf("select space_remaining_kb from users where is_active=1 and username = '%s'", $username);
-		$mysql_result = mysql_query($sql, $this->db);
-		if ($mysql_result == FALSE) {
-		} else {
-			$arr = mysql_fetch_array($mysql_result);
+		$params = array(':username' => $username);
+		try{
+			$sth = $this->db->prepare('select space_remaining_kb from users where is_active=1 and username = :username');
+			$sth->execute($params);
+			$arr = $sth->fetch(PDO::FETCH_ASSOC);
 			$rslt = intval($arr['space_remaining_kb']);
+			$sth->closeCursor();
+		} catch(PDOException $e) {
+			$rslt = 0;
 		}
-		
-		$this->disconnect();
 		
 		return $rslt;
 	}
 
 	function isActive($username) {
 		$rslt = false;	
-		$this->connect();
 		
-		$sql = sprintf("select is_active from users where username = '%s'", $username);
-		$mysql_result = mysql_query($sql, $this->db);
-		if ($mysql_result == FALSE) {
-		} else {
-			$arr = mysql_fetch_array($mysql_result);
+		$params = array(':username' => $username);
+		try{
+			$sth = $this->db->prepare('select is_active from users where username = :username');
+			$sth->execute($params);
+			$arr = $sth->fetch(PDO::FETCH_ASSOC);
 			$rslt = (intval($arr['is_active']) == 1) ? true : false;
+			$sth->closeCursor();
+		} catch(PDOException $e) {
+			$rslt = false;
 		}
-		
-		$this->disconnect();
 		
 		return $rslt;
 	}
 	
 	function setActive($username, $isActive) {
 		$rslt = -1;
-		$this->connect();
 		
-		$sql = sprintf("update users set is_active = %d where username = '%s'", $isActive, $username);
-		$mysql_result = mysql_query($sql, $this->db);
-		if ($mysql_result != FALSE) {
+		$params = array(':username' => $username, ':isactive' => $isActive);
+		try{
+			$sth = $this->db->prepare('update users set is_active = :isactive where username = :username');
+			$sth->execute($params);
 			$rslt = 0;
+			$sth->closeCursor();
+		} catch(PDOException $e) {
+			$rslt = -1;
 		}
 		
-		$this->disconnect();
+		return $rslt;		
 	}
 	
 	function createTokenForUser($username) {
 		$rslt = "";	
-		$this->connect();
-		
-		$rslt = mysql_query(sprintf("set @username = '%s'", $username), $this->db);
-		$rslt = mysql_query("set @o_token = ''", $this->db);
-		$rslt = mysql_query("CALL createTokenForUser(@username, @o_token)", $this->db);
-		$res = mysql_query("SELECT @o_token as _p_out", $this->db);
-		$row = mysql_fetch_array($res);
-		$rslt = $row['_p_out'];
-		
-		$this->disconnect();
+		try{
+			$token = "";
+			$params = array(':username' => $username);
+			$sth = $this->db->prepare("CALL createTokenForUser(:username, @token)");
+			$sth->execute($params);
+			$arr = $this->db->query("select @token as _p_out")->fetch(PDO::FETCH_ASSOC); 
+			$token = $arr['_p_out'];
+			$rslt = $token;			
+			$sth->closeCursor();
+		} catch(PDOException $e) {
+			$rslt = "";
+		}
 		
 		return $rslt;
 	}
@@ -188,17 +203,15 @@ class MySqlDatabase implements IDatabase {
 	}
 	
 	private function connect() {
-		$link = mysql_connect("localhost:3306", "acs560", "acs560@se");
-		if (!$link) {
-		} else {
-			$this->db = $link;
-	  		mysql_select_db("jot", $this->db);
+		$dsn = 'mysql:dbname=jot;host=localhost';
+		$user = 'acs560';
+		$password = 'acs560@se';
+		if ($this->db == FALSE) {
+			try {
+				$this->db = new PDO($dsn, $user, $password);
+			} catch (PDOException $e) {
+			}
 		}
-	}
-	
-	private function disconnect() {
-	  mysql_close($this->db);
-	  $this->db = null;		
 	}
 	
 }

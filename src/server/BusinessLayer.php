@@ -6,7 +6,7 @@ include_once 'DBFactory.php';
 class BusinessLayer {
 	private $db = null;
 		
-	function BusinessLayer() {
+	function __construct() {
 		$this->db = DBFactory::getDatabase();
 	}
 	

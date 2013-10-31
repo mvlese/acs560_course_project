@@ -3,9 +3,18 @@ include_once "EntityItem.php";
 include_once "Entity.php";
 include_once "EntityResult.php";
 include_once "BusinessLayer.php";
- 
+require_once 'htmlpurifier.library/HTMLPurifier.auto.php';
+
+$config = HTMLPurifier_Config::createDefault();
+$purifier = new HTMLPurifier($config);
+$businessLayer = new BusinessLayer();
+
 function prepareValue($value, $setToUpper = false) {
-	$temp = trim($value);
+	global $purifier;
+	
+	$clean_value = $purifier->purify($value);
+
+	$temp = trim($clean_value);
 	if ($setToUpper == true) {
 		$temp = strtoupper($temp);
 	} 
@@ -32,7 +41,6 @@ XML;
 function changePassword($token, $newPassword)
 {
 	$retval = -1;
-	$businessLayer = new BusinessLayer();
 	
 	return $retval;
 }
@@ -42,8 +50,8 @@ function changePassword($token, $newPassword)
 #
 function deleteAccount($token, $username, $password)
 {
+	global $businessLayer;
 	$retval = -1;
-	$businessLayer = new BusinessLayer();
 	$retval = $businessLayer->deactivateUser(
 				prepareValue($token),
 				prepareValue($username, true),
@@ -57,9 +65,9 @@ function deleteAccount($token, $username, $password)
 #
 function logon($username, $password)
 {
+	global $businessLayer;
 	$retval = "";
 	
-	$businessLayer = new BusinessLayer();
 	$retval = $businessLayer->logon(prepareValue($username, true), prepareValue($password));
   
 	return $retval;
@@ -70,9 +78,9 @@ function logon($username, $password)
 #
 function registerNewUser($username, $password)
 {
-  	$retval = "";
+	global $businessLayer;
+	$retval = "";
 
-	$businessLayer = new BusinessLayer();
 	$retval = $businessLayer->registerNewUser(prepareValue($username, true), prepareValue($password));
   
   	return $retval;
