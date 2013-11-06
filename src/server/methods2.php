@@ -40,8 +40,10 @@ XML;
 #
 function changePassword($token, $newPassword)
 {
+	global $businessLayer;
 	$retval = -1;
-	
+	$retval = $businessLayer->changePassword(
+				prepareValue($token), prepareValue($newPassword));
 	return $retval;
 }
 
@@ -68,7 +70,8 @@ function logon($username, $password)
 	global $businessLayer;
 	$retval = "";
 	
-	$retval = $businessLayer->logon(prepareValue($username, true), prepareValue($password));
+	$retval = $businessLayer->logon(
+				prepareValue($username, true), prepareValue($password));
   
 	return $retval;
 }
@@ -81,7 +84,8 @@ function registerNewUser($username, $password)
 	global $businessLayer;
 	$retval = "";
 
-	$retval = $businessLayer->registerNewUser(prepareValue($username, true), prepareValue($password));
+	$retval = $businessLayer->registerNewUser(
+				prepareValue($username, true), prepareValue($password));
   
   	return $retval;
 }
@@ -91,9 +95,10 @@ function registerNewUser($username, $password)
 #
 function deleteEntity($token, $entity)
 {
-  $retval = -1;
+	global $businessLayer;
+	$retval = -1;
 
-  return $retval;
+	return $retval;
 }
 
 #
@@ -101,14 +106,12 @@ function deleteEntity($token, $entity)
 #
 function getByDate($token, $date)
 {
-	$retval = new EntityResult();
-	
-	$retval->setResult(-1);
-	$retval->setErrorMessage('not implemented');
+	global $businessLayer;
+
+	$retval = $businessLayer->getByDate(
+				prepareValue($token), prepareValue($date));
 	
 	return $retval->getData();
-	
-	return $retval;
 }
 
 #
@@ -116,41 +119,24 @@ function getByDate($token, $date)
 #
 function getByType($token, $type)
 {
-	$retval = new EntityResult();
-	
-	$retval->setResult(-1);
-	$retval->setErrorMessage('not implemented');
+	global $businessLayer;
+
+	$retval = $businessLayer->getByType(
+				prepareValue($token), prepareValue($type));
 	
 	return $retval->getData();
-	
-	return $retval;
 }
 
 #
 #
 #
-function getEntity($token, $entity)
+function getEntity($token, $key)
 {
-	$retval = new EntityResult();
-	
-	$retval->setResult(0);
-	$retval->setErrorMessage('');
-	$entity1 = new Entity();
-	$entity1->setKey('key1');
-	$retval->addEntity($entity1);
-/*
-	$entity2 = new Entity();
-	$entity2->setKey('key2');
-	$retval->addEntity($entity2);
+	global $businessLayer;
 
-	$entity3 = new Entity();
-	$entity3->setKey('key3');
-	$retval->addEntity($entity3);
+	$retval = $businessLayer->getEntity(
+				prepareValue($token), prepareValue($key));
 
-	$entity4 = new Entity();
-	$entity4->setKey('key4');
-	$retval->addEntity($entity4);
-*/	
 	return $retval->getData();
 }
 
@@ -159,12 +145,13 @@ function getEntity($token, $entity)
 #
 function getSharedEntity($token, $entity, $fromShareWithUsername)
 {
-  $retval = "";
+	global $businessLayer;
+	$retval = "";
 
-  $msg = "not implemented";
-  $retval = getError($msg);
-
-  return $retval;
+	$msg = "not implemented";
+	$retval = getError($msg);
+	
+	return $retval;
 }
 
 
@@ -173,9 +160,10 @@ function getSharedEntity($token, $entity, $fromShareWithUsername)
 #
 function shareEntity($token, $entity, $toShareWithUsername)
 {
-  $retval = -1;
+	global $businessLayer;
+	$retval = -1;
 
-  return $retval;
+	return $retval;
 }
 
 #
@@ -183,9 +171,12 @@ function shareEntity($token, $entity, $toShareWithUsername)
 #
 function storeEntity($token, $entity)
 {
-  $retval = -1;
-
-  return $retval;
+	global $businessLayer;
+	$retval = -1;
+	$obj = Entity::getEntityFromData($entity);
+	$retval = $businessLayer->storeEntity(prepareValue($token), $obj);
+	
+	return $retval;
 }
 
 

@@ -26,7 +26,7 @@ class JotWsdl {
 			array('retval' => 'tns:EntityResult'));
 		
 		$server->register('getEntity',
-			array('token' => 'xsd:string', 'entity' => 'tns:Entity'),
+			array('token' => 'xsd:string', 'key' => 'xsd:string'),
 			array('retval' => 'tns:EntityResult'));
 		
 		$server->register('getSharedEntity',

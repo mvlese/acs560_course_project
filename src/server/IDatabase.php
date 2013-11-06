@@ -9,7 +9,13 @@ interface IDatabase {
 	function isActive($username);
 	function setActive($username, $isActive);
 	
-	function addEntity($entity, $token);
+	# Adds or updates the given entity.
+	# Returns the entity id.
+	function setEntity($token, $entity);
+	
+	# Adds or updates the given entity item.
+	function setEntityItem($token, $entityItem, $entityId);
+	
 	function getEntityKeys($token);
 	function getEntityKeysByDate($token);
 	function getEntityKeysByType($token);
@@ -19,7 +25,7 @@ interface IDatabase {
 	function deleteEntity($entity, $token);
 	
 	function startTransaction();
-	function commitTransaction();
-	function rollbackTransaction();
+	function commit();
+	function rollback();
 }
 ?>
