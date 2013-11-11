@@ -1,4 +1,5 @@
 <?php
+include_once "logger.php";
 include_once "EntityItem.php";
 include_once "Entity.php";
 include_once "EntityResult.php";
@@ -11,7 +12,7 @@ $businessLayer = new BusinessLayer();
 
 function prepareValue($value, $setToUpper = false) {
 	global $purifier;
-	
+
 	$clean_value = $purifier->purify($value);
 
 	$temp = trim($clean_value);
@@ -69,9 +70,12 @@ function logon($username, $password)
 {
 	global $businessLayer;
 	$retval = "";
-	
+	logger("entering logon\n");
+
 	$retval = $businessLayer->logon(
 				prepareValue($username, true), prepareValue($password));
+
+	logger("logon: token: $retval\n");
   
 	return $retval;
 }
@@ -84,9 +88,13 @@ function registerNewUser($username, $password)
 	global $businessLayer;
 	$retval = "";
 
+	logger("entering registerNewUser\n");
+
 	$retval = $businessLayer->registerNewUser(
 				prepareValue($username, true), prepareValue($password));
   
+	logger("registerNewUser: token: $retval\n");
+
   	return $retval;
 }
 
@@ -134,8 +142,12 @@ function getEntity($token, $key)
 {
 	global $businessLayer;
 
+	logger("entering getEntity\n");
+
 	$retval = $businessLayer->getEntity(
 				prepareValue($token), prepareValue($key));
+
+	logger("leaving getEntity\n");
 
 	return $retval->getData();
 }
@@ -146,10 +158,10 @@ function getEntity($token, $key)
 function getSharedEntity($token, $entity, $fromShareWithUsername)
 {
 	global $businessLayer;
-	$retval = "";
+	$retval = new EntityResult();
 
 	$msg = "not implemented";
-	$retval = getError($msg);
+	$retval->setErrorMessage($msg);
 	
 	return $retval;
 }
@@ -173,9 +185,14 @@ function storeEntity($token, $entity)
 {
 	global $businessLayer;
 	$retval = -1;
+
+	logger("entering storeEntity\n");
+
 	$obj = Entity::getEntityFromData($entity);
 	$retval = $businessLayer->storeEntity(prepareValue($token), $obj);
-	
+
+	logger("leaving storeEntity\n");
+
 	return $retval;
 }
 

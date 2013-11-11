@@ -44,9 +44,13 @@ class Entity {
     public static function getEntityFromData($data) {
     	$entity = new Entity();
     	$entity->setKey($data['key']);
-    	foreach($data['items'] as $key => $value) {
-    		$item = EntityItem::getItemFromData($value);
-    		$entity->addItem($item);
+		$items = $data['items'];
+    	foreach($items as $key => $value) {
+    		# Should only be one $value.
+			foreach($value as $key1 => $value1) {
+	    			$item = EntityItem::getItemFromData($value1);
+	    			$entity->addItem($item);
+			}
     	}	
     	
     	return $entity;

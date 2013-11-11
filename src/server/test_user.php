@@ -68,6 +68,22 @@ if (strlen($token) > 0) {
 	echo "$user not logged on<br>";
 }
 
+$pw = "P@ssw0rdyyy";
+$rslt = changePassword($token, $pw);
+if ($rslt == 0) {
+	echo "changed password<br>";
+} else {
+	echo "password not changed<br>";
+}
+
+echo "<br>Logon account after password change.<br>";
+$token = logon($user, $pw);
+if (strlen($token) > 0) {
+	echo "$user logged on: $token<br>";
+} else {
+	echo "$user not logged on<br>";
+}
+
 /*
 $token = logon("mlese", "P@ssw0rd");
 if (strlen($token) > 0) {

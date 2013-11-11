@@ -41,7 +41,7 @@ class EntityResult {
 		$entityList = array();
         $idx = 0;
         foreach($this->entities as $key => $value) {
-                $entityList[$idx] = $value->getData();
+                $entityList[sprintf("entity%d",$idx)] = $value->getData();
                 $idx++;
         }
         $retval['entities'] = $entityList;

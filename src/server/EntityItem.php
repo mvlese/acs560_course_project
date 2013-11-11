@@ -42,7 +42,7 @@ class EntityItem {
     }
     
     public static function getItemFromData($data) {
-    	$item = new EntityItem();
+		$item = new EntityItem();
         $item->setItemId($data['itemid']);
         $item->setItemType($data['itemtype']);
         $item->setAnnotation($data['annotation']);

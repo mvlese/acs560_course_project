@@ -59,7 +59,7 @@ class JotWsdl {
 			'annotation' => array('name' => 'annotation', 'type' => 'xsd:string', 'nillable' => 'true'),
 			'bdata' => array('name' => 'bdata', 'type' => 'xsd:string', 'nillable' => 'true')));
 		
-		$server->wsdl->addComplexType('EntityItems', 'entityItems', 'array', '', 'SOAP-ENC:Array',
+		$server->wsdl->addComplexType('ArrayOfEntityItems', 'entityItems', 'array', '', 'SOAP-ENC:Array',
 			array(), 
 			array(
 				array('ref' => 'SOAP-ENC:arrayType', 'wsdl:arrayType' => 'tns:EntityItem[]'),
@@ -69,9 +69,9 @@ class JotWsdl {
 		$server->wsdl->addComplexType('Entity', 'entity', 'struct', 'all', '',
 		array(
 			'key' => array('name' => 'key', 'type' => 'xsd:string'),
-			'items' => array('name' => 'items', 'type' => 'tns:EntityItems')));
-
-		$server->wsdl->addComplexType('EntityList', 'entityList', 'array', '', 'SOAP-ENC:Array',
+			'items' => array('name' => 'items', 'type' => 'tns:ArrayOfEntityItems')));
+		
+		$server->wsdl->addComplexType('ArrayOfEntities', 'entityList', 'array', '', 'SOAP-ENC:Array',
 			array(), 
 			array(
 				array('ref' => 'SOAP-ENC:arrayType', 'wsdl:arrayType' => 'tns:Entity[]'),
@@ -82,9 +82,8 @@ class JotWsdl {
 		array(
 			'result' => array('name' => 'result', 'type' => 'xsd:int'),
 			'errorMessage' => array('name' => 'errorMessage', 'type' => 'xsd:string'),
-			'entities' => array('name' => 'entities', 'type' => 'tns:EntityList')));
-
-
+			'entities' => array('name' => 'entities', 'type' => 'tns:ArrayOfEntities')));
+		
 		JotWsdl::registerMethods($server);
 	}
 }
