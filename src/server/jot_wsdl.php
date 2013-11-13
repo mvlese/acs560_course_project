@@ -17,6 +17,10 @@ class JotWsdl {
 			array('token' => 'xsd:string', 'entity' => 'tns:Entity'),
 			array('retval' => 'xsd:int'));
 		
+		$server->register('getAllKeys',
+			array('token' => 'xsd:string'),
+			array('retval' => 'tns:EntityResult'));
+		
 		$server->register('getByDate',
 			array('token' => 'xsd:string', 'date' => 'xsd:string'),
 			array('retval' => 'tns:EntityResult'));
@@ -69,6 +73,8 @@ class JotWsdl {
 		$server->wsdl->addComplexType('Entity', 'entity', 'struct', 'all', '',
 		array(
 			'key' => array('name' => 'key', 'type' => 'xsd:string'),
+			'item_memory_bytes' => array('name' => 'item_memory_bytes', 'type' => 'xsd:int'),
+			'modified' => array('name' => 'modified', 'type' => 'xsd:string'),
 			'items' => array('name' => 'items', 'type' => 'tns:ArrayOfEntityItems')));
 		
 		$server->wsdl->addComplexType('ArrayOfEntities', 'entityList', 'array', '', 'SOAP-ENC:Array',

@@ -196,5 +196,16 @@ function storeEntity($token, $entity)
 	return $retval;
 }
 
+function getAllKeys($token) 
+{
+	global $businessLayer;
 
+	logger("entering getAllKeys\n");
+
+	$retval = $businessLayer->getAllKeys(prepareValue($token));
+
+	logger("leaving getAllKeys\n");
+
+	return $retval->getData();	
+}
 ?>

@@ -1,4 +1,6 @@
 <?php
+ini_set('output_buffering', 0);
+
 require_once "lib/nusoap.php";
 require_once "jot_wsdl.php";
 

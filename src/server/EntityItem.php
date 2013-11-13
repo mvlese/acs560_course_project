@@ -31,14 +31,24 @@ class EntityItem {
     	$this->bdata = $value;
     }
     
+    public function getSize() {
+	$size = 0;
+	if ($this->itemtype == 'text') {
+		$size = strlen($this->annotation);
+	} else {
+		$size = strlen(base64_decode($this->bdata));
+	}
+
+	return $size;
+    }
+
     public function getData() {
         $retval = array();
         $retval['itemid'] = $this->itemid;
         $retval['itemtype'] = $this->itemtype;
         $retval['annotation'] = $this->annotation;
         $retval['bdata'] = $this->bdata;
-
-		return $retval;
+ 	return $retval;
     }
     
     public static function getItemFromData($data) {

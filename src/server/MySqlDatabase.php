@@ -198,6 +198,7 @@ class MySqlDatabase {
 			if ($itemType != 'text') {
 				$blob = $arr['item'];
 				$item->setBdata(base64_encode($blob));
+				#$item->setBdata(base64_encode("TBD...there is a bug with values over 4575 in length."));
 			}
 			$rslt->addItem($item);
 		}
@@ -206,8 +207,33 @@ class MySqlDatabase {
 		return $rslt;
 	}
 	
-	public function getEntityKeys($token) {
+	public function getAllKeys($token) {
+		$rslt = array();
 		
+		$params = array(':token' => $token);
+		# find entities that has user that has token
+		# and that has items that has type = input type.
+		$sth = $this->db->prepare(
+			"select e.title, e.last_modified, ( " .
+			    "select sum(if(it.friendly_name='text', length(ei.annotation), length(ei.item))) as items_size " .
+			    "from entity_items ei " .
+			    "inner join item_types it on it.iditem_types=ei.iditem_types where ei.identities=e.identities) as items_size " .
+			"from entities e " .
+			"inner join users u on u.iduser=e.iduser " .
+			"where u.token = :token"); 
+		$sth->execute($params);
+		$idx = 0;
+		while ($arr = $sth->fetch(PDO::FETCH_ASSOC)) {
+			$entity = new Entity();
+			$entity->setKey($arr['title']);
+			$entity->setModified($arr['last_modified']);
+			$entity->setItemsSize($arr['items_size']);
+			$rslt[$idx] = $entity;
+			$idx++;
+		}
+		$sth->closeCursor();
+
+		return $rslt;
 	}
 	
 	public function getEntityKeysByDate($token, $date) {
@@ -228,13 +254,14 @@ class MySqlDatabase {
 			'inner join item_types it on it.iditem_types = ei.iditem_types '.
 			'where u.token = :token and it.friendly_name = lower(:item_type)');
 		$sth->execute($params);
-		$arr = $sth->fetch(PDO::FETCH_ASSOC);
 		$idx = 0;
-		foreach($arr as $key => $value) {
-			$rslt[$idx] = $value;
+		while ($arr = $sth->fetch(PDO::FETCH_ASSOC)) {
+			$rslt[$idx] = $arr['title'];
 			$idx++;
 		}
 		$sth->closeCursor();
+
+		return $rslt;
 	}
 	
 	public function getAvalailableSharedEntityKeys($token) {

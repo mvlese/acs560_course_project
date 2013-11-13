@@ -16,9 +16,9 @@ interface IDatabase {
 	# Adds or updates the given entity item.
 	function setEntityItem($token, $entityItem, $entityId);
 	
-	function getEntityKeys($token);
-	function getEntityKeysByDate($token);
-	function getEntityKeysByType($token);
+	function getAllKeys($token);
+	function getEntityKeysByDate($token, $date);
+	function getEntityKeysByType($token, $type);
 	function getAvalailableSharedEntityKeys($token);
 	function shareEntity($entity, $userid, $token);
 	function unshareEntity($entity, $userid, $token);

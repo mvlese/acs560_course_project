@@ -193,8 +193,8 @@ class BusinessLayer {
 			$rslt = new EntityResult();
 			$rslt->setResult(-1);
 		}
-			
-		return $rslt;
+
+		return $rslt;		
 	}
 
 	public function getEntity($token, $key) {
@@ -214,6 +214,27 @@ class BusinessLayer {
 			$rslt->setResult(-1);
 		}
 		
+		return $rslt;
+	}
+
+	public function getAllKeys($token) {
+		$rslt = new EntityResult();
+		$rslt->setResult(-1);
+		try{
+			$this->db->startTransaction();
+			$arr = $this->db->getAllKeys($token);
+			$this->db->commit();
+			$rslt->setResult(0);
+			foreach($arr as $key => $value) {
+				$rslt->addEntity($value);
+			}
+		}
+		catch(Exception $ex) {
+			$this->db->rollback();
+			$rslt = new EntityResult();
+			$rslt->setResult(-1);
+		}
+			
 		return $rslt;
 	}
 	
