@@ -14,16 +14,32 @@ class EntityItem {
         $this->bdata = '';
     }
 
+    public function getItemId() {
+    	return $this->itemid;
+    }
+    
     public function setItemId($value) {
     	$this->itemid = $value;
+    }
+    
+    public function getItemType() {
+    	return $this->itemtype;
     }
     
     public function setItemType($value) {
     	$this->itemtype = $value;
     }
     
+    public function getAnnotation() {
+    	return $this->annotation;
+    }
+    
     public function setAnnotation($value) {
     	$this->annotation = $value;
+    }
+    
+    public function getBdata() {
+    	return $this->bdata;
     }
     
     # Set base-64 encoded data.

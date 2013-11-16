@@ -106,18 +106,24 @@ function deleteEntity($token, $entity)
 	global $businessLayer;
 	$retval = -1;
 
+	logger("entering deleteEntity\n");
+
+	$retval = $businessLayer->deleteEntity(prepareValue($token), $entity);
+  
+	logger("leaving deleteEntity: result: $retval\n");
+
 	return $retval;
 }
 
 #
 #
 #
-function getByDate($token, $date)
+function getByDate($token, $startDate, $endDate)
 {
 	global $businessLayer;
 
 	$retval = $businessLayer->getByDate(
-				prepareValue($token), prepareValue($date));
+				prepareValue($token), prepareValue($startDate), prepareValue($endDate));
 	
 	return $retval->getData();
 }

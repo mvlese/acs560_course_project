@@ -174,6 +174,32 @@ class BusinessLayer {
 		return $rslt;
 	}	
 	
+	public function getByDate($token, $startDate, $endDate) {
+		$rslt = new EntityResult();
+		$rslt->setResult(-1);
+		try{
+			$arr = $this->isDateRangeValid($startDate, $endDate);
+			if (count($arr) == 2) {
+				$this->db->startTransaction();
+				$arr = $this->db->getEntityKeysByDate($token, $arr[0], $arr[1]);
+				$this->db->commit();
+				$rslt->setResult(0);
+				foreach($arr as $key => $value) {
+					$entity = new Entity();
+					$entity->setKey($value);
+					$rslt->addEntity($entity);
+				}
+			}
+		}
+		catch(Exception $ex) {
+			$this->db->rollback();
+			$rslt = new EntityResult();
+			$rslt->setResult(-1);
+		}
+
+		return $rslt;		
+	}
+
 	public function getByType($token, $type) {
 		$rslt = new EntityResult();
 		$rslt->setResult(-1);
@@ -238,6 +264,46 @@ class BusinessLayer {
 		return $rslt;
 	}
 	
+	# This function deletes the items that are in this entity.  Some or all
+	# of the original items(only itemid need to be populated) may be in the
+	# entity.  If no items are listed, then the entire entity will be deleted.
+	public function deleteEntity($token, $entity) {
+		$rslt = -1;
+		try{
+			$this->db->startTransaction();
+			$username = $this->db->getUsernameForToken($token); 
+			if (strlen($username) > 0) {
+				$key = $entity->getKey();
+				$items = $entity->getItems();
+				if (count($items) == 0) {
+					# delete entire entity
+					$rslt = $this->db->deleteEntity($key, $token);
+				} else {
+					# Delete only the items in this entity.  If there are no
+					# items left after deleting these, then the entity will
+					# be deleted as well.
+					foreach($items as $item) {
+						$rslt = $this->db->deleteEntityItem(
+									$key, $item->getItemId(), $token);
+					}
+				}
+			}
+			if ($rslt == 0) {
+				# Commit on success.
+				$this->db->commit();
+			} else {
+				$this->db->rollback();
+			}
+		}
+		catch(Exception $ex) {
+			logger("in deleteEntityItem exception\n");
+			$this->db->rollback();
+			$rslt = -1;
+		}
+		
+		return $rslt;
+	}
+	
 	private function isUserValid($username, $password, $doNotCheckIsActive = false) {
 		$rslt = false;
 		# retrieve hashed password from DB for this user
@@ -248,6 +314,30 @@ class BusinessLayer {
 				$rslt = Security::isValid($password, $hashedPassword);
 			}	
 		}
+		return $rslt;
+	}
+	
+	private function isDateRangeValid($startDate, $endDate) {
+		$isValid = true;
+		$d1 = new DateTime();
+		$d2 = new DateTime();
+		$rslt = array();
+		
+		$arr = date_parse($startDate);
+		$isValid &= (count($arr['errors']) == 0);
+		if ($isValid)  {
+			$d1->setDate($arr['year'], $arr['month'], $arr['day']);
+			$arr = date_parse($endDate);
+			$isValid &= (count($arr['errors']) == 0);
+			if ($isValid)  {
+				$d2->setDate($arr['year'], $arr['month'], $arr['day']);
+				$isValid &= ($d2->getTimestamp() >= $d1->getTimestamp());
+				if ($isValid) {
+					$rslt = array($d1, $d2);
+				}
+			}
+		}		
+		
 		return $rslt;
 	}
 	

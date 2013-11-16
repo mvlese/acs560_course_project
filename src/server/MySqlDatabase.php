@@ -1,7 +1,7 @@
 <?php
 require_once 'IDatabase.php';
 
-class MySqlDatabase {
+class MySqlDatabase implements IDatabase {
 	
 	private $db = FALSE;
 	
@@ -236,8 +236,35 @@ class MySqlDatabase {
 		return $rslt;
 	}
 	
-	public function getEntityKeysByDate($token, $date) {
+	# $date is DateTime object.
+	public function getEntityKeysByDate($token, $startDate, $endDate) {
+		$rslt = array();
 		
+		logger('start date: ' . $startDate->format("Y-m-d") . "\n");
+		# Add one day to the end date.
+		$endDate = $endDate->add(new DateInterval('P1D'));
+		logger('end date: ' . $endDate->format("Y-m-d") . "\n");
+
+		$params = array(
+			':token' => $token, 
+			':startdate' => $startDate->format("Y-m-d"), 
+			':enddate' => $endDate->format("Y-m-d"));
+		# find entities that has user that has token
+		# and that has items that has type = input type.
+		$sth = $this->db->prepare(
+			'select distinct e.title from entities e '.
+			'inner join users u on u.iduser=e.iduser '.
+			'inner join entity_items ei on ei.identities = e.identities '.
+			'where u.token = :token and e.last_modified >= :startdate and e.last_modified < :enddate');
+		$sth->execute($params);
+		$idx = 0;
+		while ($arr = $sth->fetch(PDO::FETCH_ASSOC)) {
+			$rslt[$idx] = $arr['title'];
+			$idx++;
+		}
+		$sth->closeCursor();
+
+		return $rslt;
 	}
 	
 	# Return a string array
@@ -276,8 +303,57 @@ class MySqlDatabase {
 		
 	}
 	
-	public function deleteEntity($entity, $token) {
+	public function deleteEntity($key, $token) {
+		$rslt = -1;
+		$params = array(':key' => $key, ':token' => $token);
+		$sth = $this->db->prepare(
+			'delete from entities ' .
+			'using entities, users ' .
+			'where entities.title = :key and users.token = :token ' .
+			'and entities.iduser = users.iduser');
+		$sth->execute($params);
+		# if here without throwing an exception, should be good.
+		$rslt = 0;
+		$sth->closeCursor();
 		
+		return $rslt;
+	}
+	
+	# If there are no items left after deleting this one, then the entity will
+	# be deleted as well.
+	public function deleteEntityItem($key, $itemid, $token) {
+		$rslt = -1;
+		$params = array(':key' => $key, ':token' => $token, ':itemid' => $itemid);
+		$sth = $this->db->prepare(
+			'delete from entity_items ' .
+			'using entity_items, entities, users ' .
+			'where entities.title = :key ' . 
+		        'and users.token = :token ' .
+		        'and entities.iduser = users.iduser ' .
+		        'and entity_items.identities = entities.identities ' .
+		        'and entity_items.identity_items = :itemid');
+		$sth->execute($params);
+		$sth->closeCursor();
+		$rslt = 0;
+		
+		# Now find out if the item list is empty for this entity.  If so,
+		# then delete the entity, too.
+		$params = array(':key' => $key, ':token' => $token);
+		$sth = $this->db->prepare(
+			'select count(*) as cnt from entity_items ' .
+			'inner join entities on entities.identities = entity_items.identities ' .
+			'inner join users on users.iduser = entities.iduser ' .
+			'where entities.title = :key and users.token = :token');
+		$sth->execute($params);
+		$arr = $sth->fetch(PDO::FETCH_ASSOC);
+		$itemCount = intval($arr['cnt']);
+		if ($itemCount == 0) {
+			logger(sprintf("no more items, deleting entity: %s\n", $key));
+			$rslt = $this->deleteEntity($key, $token);
+		}
+		$sth->closeCursor();
+		
+		return $rslt;
 	}
 	
 	public function startTransaction() {
@@ -296,9 +372,9 @@ class MySqlDatabase {
 	}
 	
 	private function connect() {
-		$dsn = 'mysql:dbname=jot;host=localhost';
+		$dsn = 'mysql:dbname=lese_jot;host=localhost';
 		$user = 'acs560';
-		$password = 'acs560@se';
+		$password = 'jotitdown';
 		if ($this->db == FALSE) {
 			try {
 				$this->db = new PDO($dsn, $user, $password);

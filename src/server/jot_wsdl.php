@@ -22,7 +22,7 @@ class JotWsdl {
 			array('retval' => 'tns:EntityResult'));
 		
 		$server->register('getByDate',
-			array('token' => 'xsd:string', 'date' => 'xsd:string'),
+			array('token' => 'xsd:string', 'startDate' => 'xsd:string', 'endDate' => 'xsd:string'),
 			array('retval' => 'tns:EntityResult'));
 	
 		$server->register('getByType',

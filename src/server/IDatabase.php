@@ -17,12 +17,13 @@ interface IDatabase {
 	function setEntityItem($token, $entityItem, $entityId);
 	
 	function getAllKeys($token);
-	function getEntityKeysByDate($token, $date);
+	function getEntityKeysByDate($token, $startDate, $endDate);
 	function getEntityKeysByType($token, $type);
 	function getAvalailableSharedEntityKeys($token);
 	function shareEntity($entity, $userid, $token);
 	function unshareEntity($entity, $userid, $token);
-	function deleteEntity($entity, $token);
+	function deleteEntity($key, $token);
+	function deleteEntityItem($key, $itemid, $token);
 	
 	function startTransaction();
 	function commit();
