@@ -142,7 +142,7 @@ class MySqlDatabase implements IDatabase {
 		return $rslt;
 	}
 	
-	function setEntityItem($token, $entityItem, $entityId) {
+	public function setEntityItem($token, $entityItem, $entityId) {
 		$rslt = -1;
 		
 		# not implemented
@@ -174,35 +174,13 @@ class MySqlDatabase implements IDatabase {
 		return $rslt;
 	}
 	
-	function getEntity($token, $key) {
-		$rslt = new Entity();
-		$rslt->setKey($key);
-		
-		$params = array(':token' => $token, ':key' => $key);
-		# find entities that has user that has token
-		# and that has items that has type = input type.
-		$sth = $this->db->prepare(
-			'select ei.identity_items, it.friendly_name, ei.annotation, ei.item ' .
-			'from entity_items ei ' .
-			'inner join entities e on e.identities = ei.identities ' .
-			'inner join item_types it on it.iditem_types = ei.iditem_types ' .
-			'inner join users u on u.iduser = e.iduser ' .
-			'where u.token = :token and e.title = :key');
-		$sth->execute($params);
-		while ($arr = $sth->fetch(PDO::FETCH_ASSOC)) {
-			$item = new EntityItem();
-			$item->setItemId($arr['identity_items']);
-			$itemType = $arr['friendly_name'];
-			$item->setItemType($itemType);
-			$item->setAnnotation($arr['annotation']);
-			if ($itemType != 'text') {
-				$blob = $arr['item'];
-				$item->setBdata(base64_encode($blob));
-				#$item->setBdata(base64_encode("TBD...there is a bug with values over 4575 in length."));
-			}
-			$rslt->addItem($item);
+	public function getEntity($token, $key) {
+		$isShared = $this->isShared($token, $key);
+		if ($isShared) {
+			$rslt = $this->getSharedEntity($token, $key);
+		} else {
+			$rslt = $this->getPrivateEntity($token, $key);
 		}
-		$sth->closeCursor();
 		
 		return $rslt;
 	}
@@ -215,7 +193,7 @@ class MySqlDatabase implements IDatabase {
 		# and that has items that has type = input type.
 		$sth = $this->db->prepare(
 			"select e.title, e.last_modified, ( " .
-			    "select sum(if(it.friendly_name='text', length(ei.annotation), length(ei.item))) as items_size " .
+			    "select sum(length(ei.annotation) + length(ei.item)) as items_size " .
 			    "from entity_items ei " .
 			    "inner join item_types it on it.iditem_types=ei.iditem_types where ei.identities=e.identities) as items_size " .
 			"from entities e " .
@@ -291,16 +269,53 @@ class MySqlDatabase implements IDatabase {
 		return $rslt;
 	}
 	
+	# Return the keys of those entities shared to the owner of the token.
 	public function getAvalailableSharedEntityKeys($token) {
+		$rslt = array();
 		
+		$params = array(':token' => $token);
+		$sth = $this->db->prepare(
+				'select distinct e.title from entities e ' . 
+				'inner join shared_entities se on se.identities = e.identities ' .
+				'inner join users u on u.iduser = se.to_userid ' .
+				'where u.token = :token');
+		$sth->execute($params);
+		$idx = 0;
+		while ($arr = $sth->fetch(PDO::FETCH_ASSOC)) {
+			$rslt[$idx] = $arr['title'];
+			$idx++;
+		}
+		$sth->closeCursor();
+		
+		return $rslt;
 	}
 	
-	public function shareEntity($entity, $userid, $token) {
+	public function shareEntity($token, $entity, $toShareWithUsername) {
+		$rslt = -1;
+
+		$key = $entity->getKey();
+		foreach ($entity->getItems() as $item) {
+			$itemid = $item->getItemId;
+			$params = array(
+				':token' => $token,
+				':key' => $key, 
+				':itemid' => $itemid,
+				':shareWith' => $toShareWithUsername
+			);			
+			$sth = $this->db->prepare(
+					"CALL shareEntity(:token, :key, :itemId, :shareWith)");
+			$sth->execute($params);
+			$sth->closeCursor();
+		}
+		$rslt = 0;
 		
+		return $rslt;
 	}
 	
-	public function unshareEntity($entity, $userid, $token) {
-		
+	public function unshareEntity($token, $entity, $toUnshareWithUsername) {
+		$rslt = -1;
+		# not implemented
+		return $rslt;
 	}
 	
 	public function deleteEntity($key, $token) {
@@ -369,6 +384,87 @@ class MySqlDatabase implements IDatabase {
 	public function rollback() {
 		$this->db->query("rollback;");
 		$this->db->query("SET autocommit=1;");
+	}
+
+	# This function returns true if the $key is a shared entity the user
+	# with the given token can view.
+	private function isShared($token, $key) {
+		$params = array(':key' => $key, ':token' => $token);
+		$sth = $this->db->prepare(
+			'select count(*) as cnt from shared_entities se ' .
+			'inner join users u on u.iduser=se.to_userid ' .
+			'inner join entities e on e.identities = se.identities ' .
+			'where u.token = :token and e.title = :key');
+		$sth->execute($params);
+		$arr = $sth->fetch(PDO::FETCH_ASSOC);
+		$itemCount = intval($arr['cnt']);
+		
+		$rslt = ($itemCount > 0);
+		
+		return $rslt;
+	}
+	
+	private function createEntityItemFromArray($array) {
+		$item = new EntityItem();
+		$item->setItemId($array['identity_items']);
+		$item->setItemType($array['friendly_name']);
+		$item->setAnnotation($array['annotation']);
+		$raw = $array['item'];
+		$encoded = base64_encode($raw);
+		$item->setBdata($encoded);
+			
+		return $item;		
+	}
+	
+	private function getPrivateEntity($token, $key) {
+		$rslt = new Entity();
+		$rslt->setKey($key);
+		
+		$params = array(':token' => $token, ':key' => $key);
+		# find items that has user that has token
+		# and that has items that has type = input type.
+		$sth = $this->db->prepare(
+			'select ei.identity_items, it.friendly_name, ei.annotation, ei.item ' .
+			'from entity_items ei ' .
+			'inner join entities e on e.identities = ei.identities ' .
+			'inner join item_types it on it.iditem_types = ei.iditem_types ' .
+			'inner join users u on u.iduser = e.iduser ' .
+			'where u.token = :token and e.title = :key ' .
+			'order by ei.identity_items');
+		$sth->execute($params);
+		while ($arr = $sth->fetch(PDO::FETCH_ASSOC)) {
+			$item = $this->createEntityItemFromArray($arr);
+			$rslt->addItem($item);
+		}
+		$sth->closeCursor();
+		
+		return $rslt;
+	}
+	
+	private function getSharedEntity($token, $key) {
+		$rslt = new Entity();
+		$rslt->setKey($key);
+
+		$params = array(':token' => $token, ':key' => $key);
+		# Find all items in shared_entities that are items of the entity with
+		# key that can be viewed by the user that has token. 
+		$sth = $this->db->prepare(
+			'select ei.identity_items, it.friendly_name, ei.annotation, ei.item from shared_entities se ' .
+			'inner join users u on u.iduser=se.to_userid ' .
+			'inner join entity_items ei on ei.identity_items = se.identity_items ' .
+			'inner join entities e on (e.identities = se.identities and ei.identities = e.identities) ' .
+			'inner join item_types it on it.iditem_types=ei.iditem_types ' .
+			'where u.token = :token and e.title = :key ' . 
+			'order by ei.identity_items');
+		logger("in getSharedEntity executing");
+		$sth->execute($params);
+		while ($arr = $sth->fetch(PDO::FETCH_ASSOC)) {
+			$item = $this->createEntityItemFromArray($arr);
+			$rslt->addItem($item);
+		}
+		$sth->closeCursor();
+		
+		return $rslt;
 	}
 	
 	private function connect() {

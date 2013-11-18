@@ -20,8 +20,8 @@ interface IDatabase {
 	function getEntityKeysByDate($token, $startDate, $endDate);
 	function getEntityKeysByType($token, $type);
 	function getAvalailableSharedEntityKeys($token);
-	function shareEntity($entity, $userid, $token);
-	function unshareEntity($entity, $userid, $token);
+	function shareEntity($token, $entity, $toShareWithUsername);
+	function unshareEntity($token, $entity, $toUnshareWithUsername);
 	function deleteEntity($key, $token);
 	function deleteEntityItem($key, $itemid, $token);
 	

@@ -48,14 +48,9 @@ class EntityItem {
     }
     
     public function getSize() {
-	$size = 0;
-	if ($this->itemtype == 'text') {
-		$size = strlen($this->annotation);
-	} else {
-		$size = strlen(base64_decode($this->bdata));
-	}
-
-	return $size;
+		$size = strlen($this->annotation) +
+			strlen(base64_decode($this->bdata));
+		return $size;
     }
 
     public function getData() {

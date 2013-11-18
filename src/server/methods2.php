@@ -108,7 +108,8 @@ function deleteEntity($token, $entity)
 
 	logger("entering deleteEntity\n");
 
-	$retval = $businessLayer->deleteEntity(prepareValue($token), $entity);
+	$obj = Entity::getEntityFromData($entity);
+	$retval = $businessLayer->deleteEntity(prepareValue($token), $obj);
   
 	logger("leaving deleteEntity: result: $retval\n");
 
@@ -180,6 +181,16 @@ function shareEntity($token, $entity, $toShareWithUsername)
 {
 	global $businessLayer;
 	$retval = -1;
+
+	logger("entering shareEntity\n");
+
+	$obj = Entity::getEntityFromData($entity);
+	$retval = $businessLayer->shareEntity(
+			prepareValue($token), 
+			$obj, 
+			prepareValue($toShareWithUsername));
+
+	logger("leaving shareEntity\n");
 
 	return $retval;
 }

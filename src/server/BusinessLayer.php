@@ -304,6 +304,25 @@ class BusinessLayer {
 		return $rslt;
 	}
 	
+	public function shareEntity($token, $entity, $toShareWithUsername) {
+		$rslt = -1;
+		try{
+			$this->db->startTransaction();
+			$username = $this->db->getUsernameForToken($token); 
+			if (strlen($username) > 0) {
+				$rslt = $this->db->shareEntity(
+						$token, $entity, $toShareWithUsername);
+			}
+		}
+		catch(Exception $ex) {
+			logger("in shareEntity exception\n");
+			$this->db->rollback();
+			$rslt = -1;
+		}
+				
+		return $rslt;
+	}
+	
 	private function isUserValid($username, $password, $doNotCheckIsActive = false) {
 		$rslt = false;
 		# retrieve hashed password from DB for this user

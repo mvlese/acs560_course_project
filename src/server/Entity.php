@@ -75,17 +75,14 @@ class Entity {
  */   
 
     public static function getEntityFromData($data) {
-logger("entering getEntityFromDataPhp");
-    	$entity = new Entity();
-    	$entity->setKey($data['key']);
+		$entity = new Entity();
+		$entity->setKey($data['key']);
 		$items = $data['items'];
-			foreach($items as $key1 => $value1) {
-	    			$item = EntityItem::getItemFromData($value1);
-	    			$entity->addItem($item);
-			}
-    	
-logger("leaving getEntityFromDataPhp");
-	return $entity;
+		foreach($items as $key1 => $value1) {
+			$item = EntityItem::getItemFromData($value1);
+			$entity->addItem($item);
+		}
+		return $entity;
     }
     
 }
