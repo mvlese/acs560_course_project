@@ -5,6 +5,7 @@ require_once 'DBFactory.php';
 require_once 'EntityItem.php';
 require_once 'Entity.php';
 require_once 'EntityResult.php';
+require_once 'SearchKeyResult.php';
 
 class BusinessLayer {
 	# We use transactions for all database operations.
@@ -151,7 +152,7 @@ class BusinessLayer {
 					$rslt = 0;
 					$items = $entity->getItems();
 					// Entity is an array of EntityItems.
-					foreach($items as $key => $entityItem) {
+					foreach($items as $entityItem) {
 						$rslt = $this->db->setEntityItem($token, $entityItem, $entityId);
 						if ($rslt != 0) {
 							break;
@@ -175,7 +176,7 @@ class BusinessLayer {
 	}	
 	
 	public function getByDate($token, $startDate, $endDate) {
-		$rslt = new EntityResult();
+		$rslt = new SearchKeyResult();
 		$rslt->setResult(-1);
 		try{
 			$arr = $this->isDateRangeValid($startDate, $endDate);
@@ -184,16 +185,14 @@ class BusinessLayer {
 				$arr = $this->db->getEntityKeysByDate($token, $arr[0], $arr[1]);
 				$this->db->commit();
 				$rslt->setResult(0);
-				foreach($arr as $key => $value) {
-					$entity = new Entity();
-					$entity->setKey($value);
-					$rslt->addEntity($entity);
+				foreach($arr as $value) {
+					$rslt->addItem($value);
 				}
 			}
 		}
 		catch(Exception $ex) {
 			$this->db->rollback();
-			$rslt = new EntityResult();
+			$rslt = new SearchKeyResult();
 			$rslt->setResult(-1);
 		}
 
@@ -201,22 +200,22 @@ class BusinessLayer {
 	}
 
 	public function getByType($token, $type) {
-		$rslt = new EntityResult();
+		$rslt = new SearchKeyResult();
 		$rslt->setResult(-1);
 		try{
 			$this->db->startTransaction();
 			$arr = $this->db->getEntityKeysByType($token, $type);
 			$this->db->commit();
 			$rslt->setResult(0);
-			foreach($arr as $key => $value) {
-				$entity = new Entity();
-				$entity->setKey($value);
-				$rslt->addEntity($entity);
+			foreach($arr as $value) {
+				$item = new SearchItem();
+				$item->setKey($value);
+				$rslt->addItem($item);
 			}
 		}
 		catch(Exception $ex) {
 			$this->db->rollback();
-			$rslt = new EntityResult();
+			$rslt = new SearchKeyResult();
 			$rslt->setResult(-1);
 		}
 
@@ -244,20 +243,21 @@ class BusinessLayer {
 	}
 
 	public function getAllKeys($token) {
-		$rslt = new EntityResult();
+		$rslt = new SearchKeyResult();
+
 		$rslt->setResult(-1);
 		try{
 			$this->db->startTransaction();
 			$arr = $this->db->getAllKeys($token);
 			$this->db->commit();
 			$rslt->setResult(0);
-			foreach($arr as $key => $value) {
-				$rslt->addEntity($value);
+			foreach($arr as $value) {
+				$rslt->addItem($value);
 			}
 		}
 		catch(Exception $ex) {
 			$this->db->rollback();
-			$rslt = new EntityResult();
+			$rslt = new SearchKeyResult();
 			$rslt->setResult(-1);
 		}
 			
@@ -313,6 +313,7 @@ class BusinessLayer {
 				$rslt = $this->db->shareEntity(
 						$token, $entity, $toShareWithUsername);
 			}
+			$this->db->commit();
 		}
 		catch(Exception $ex) {
 			logger("in shareEntity exception\n");

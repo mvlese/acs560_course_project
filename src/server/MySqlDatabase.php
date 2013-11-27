@@ -185,6 +185,7 @@ class MySqlDatabase implements IDatabase {
 		return $rslt;
 	}
 	
+	# Return a SearchItem array
 	public function getAllKeys($token) {
 		$rslt = array();
 		
@@ -193,7 +194,7 @@ class MySqlDatabase implements IDatabase {
 		# and that has items that has type = input type.
 		$sth = $this->db->prepare(
 			"select e.title, e.last_modified, ( " .
-			    "select sum(length(ei.annotation) + length(ei.item)) as items_size " .
+			    "select sum(getSize(ei.identity_items, ei.identities)) " .
 			    "from entity_items ei " .
 			    "inner join item_types it on it.iditem_types=ei.iditem_types where ei.identities=e.identities) as items_size " .
 			"from entities e " .
@@ -202,11 +203,11 @@ class MySqlDatabase implements IDatabase {
 		$sth->execute($params);
 		$idx = 0;
 		while ($arr = $sth->fetch(PDO::FETCH_ASSOC)) {
-			$entity = new Entity();
-			$entity->setKey($arr['title']);
-			$entity->setModified($arr['last_modified']);
-			$entity->setItemsSize($arr['items_size']);
-			$rslt[$idx] = $entity;
+			$searchItem = new SearchItem();
+			$searchItem->setKey($arr['title']);
+			$searchItem->setModified($arr['last_modified']);
+			$searchItem->setItemSize($arr['items_size']);
+			$rslt[$idx] = $searchItem;
 			$idx++;
 		}
 		$sth->closeCursor();
@@ -215,6 +216,7 @@ class MySqlDatabase implements IDatabase {
 	}
 	
 	# $date is DateTime object.
+	# Return a SearchItem array
 	public function getEntityKeysByDate($token, $startDate, $endDate) {
 		$rslt = array();
 		
@@ -230,14 +232,22 @@ class MySqlDatabase implements IDatabase {
 		# find entities that has user that has token
 		# and that has items that has type = input type.
 		$sth = $this->db->prepare(
-			'select distinct e.title from entities e '.
+			'select distinct e.title, e.last_modified, ( ' .
+			    'select sum(getSize(ei.identity_items, ei.identities)) ' .
+			    'from entity_items ei ' .
+			    'inner join item_types it on it.iditem_types=ei.iditem_types where ei.identities=e.identities) as items_size ' . 
+			'from entities e '.
 			'inner join users u on u.iduser=e.iduser '.
 			'inner join entity_items ei on ei.identities = e.identities '.
 			'where u.token = :token and e.last_modified >= :startdate and e.last_modified < :enddate');
 		$sth->execute($params);
 		$idx = 0;
 		while ($arr = $sth->fetch(PDO::FETCH_ASSOC)) {
-			$rslt[$idx] = $arr['title'];
+			$item = new SearchItem();
+			$item->setKey($arr['title']);
+			$item->setModified($arr['last_modified']);
+			$item->setItemSize($arr['items_size']);
+			$rslt[$idx] = $item;
 			$idx++;
 		}
 		$sth->closeCursor();
@@ -245,7 +255,7 @@ class MySqlDatabase implements IDatabase {
 		return $rslt;
 	}
 	
-	# Return a string array
+	# Return a SearchItem array
 	public function getEntityKeysByType($token, $type) {
 		$rslt = array();
 		
@@ -253,7 +263,11 @@ class MySqlDatabase implements IDatabase {
 		# find entities that has user that has token
 		# and that has items that has type = input type.
 		$sth = $this->db->prepare(
-			'select distinct e.title from entities e '.
+			'select distinct e.title, e.last_modified, ( ' .
+			    'select sum(getSize(ei.identity_items, ei.identities)) ' .
+			    'from entity_items ei ' .
+			    'inner join item_types it on it.iditem_types=ei.iditem_types where ei.identities=e.identities) as items_size ' . 
+			'from entities e '.
 			'inner join users u on u.iduser=e.iduser '.
 			'inner join entity_items ei on ei.identities = e.identities '.
 			'inner join item_types it on it.iditem_types = ei.iditem_types '.
@@ -261,7 +275,11 @@ class MySqlDatabase implements IDatabase {
 		$sth->execute($params);
 		$idx = 0;
 		while ($arr = $sth->fetch(PDO::FETCH_ASSOC)) {
-			$rslt[$idx] = $arr['title'];
+			$item = new SearchItem();
+			$item->setKey($arr['title']);
+			$item->setModified($arr['last_modified']);
+			$item->setItemSize($arr['items_size']);
+			$rslt[$idx] = $item;
 			$idx++;
 		}
 		$sth->closeCursor();
@@ -295,15 +313,15 @@ class MySqlDatabase implements IDatabase {
 
 		$key = $entity->getKey();
 		foreach ($entity->getItems() as $item) {
-			$itemid = $item->getItemId;
+			$itemid = $item->getItemId();
 			$params = array(
 				':token' => $token,
 				':key' => $key, 
-				':itemid' => $itemid,
+				':itemid' => intval($itemid),
 				':shareWith' => $toShareWithUsername
 			);			
 			$sth = $this->db->prepare(
-					"CALL shareEntity(:token, :key, :itemId, :shareWith)");
+					"CALL shareEntity(:token, :key, :itemid, :shareWith)");
 			$sth->execute($params);
 			$sth->closeCursor();
 		}
@@ -456,7 +474,6 @@ class MySqlDatabase implements IDatabase {
 			'inner join item_types it on it.iditem_types=ei.iditem_types ' .
 			'where u.token = :token and e.title = :key ' . 
 			'order by ei.identity_items');
-		logger("in getSharedEntity executing");
 		$sth->execute($params);
 		while ($arr = $sth->fetch(PDO::FETCH_ASSOC)) {
 			$item = $this->createEntityItemFromArray($arr);
@@ -466,6 +483,7 @@ class MySqlDatabase implements IDatabase {
 		
 		return $rslt;
 	}
+	
 	
 	private function connect() {
 		$dsn = 'mysql:dbname=lese_jot;host=localhost';
@@ -478,6 +496,18 @@ class MySqlDatabase implements IDatabase {
 			}
 		}
 	}
-	
+/*	
+	private function connect() {
+		$dsn = 'mysql:dbname=jot;host=localhost';
+		$user = 'acs560';
+		$password = 'acs560@se';
+		if ($this->db == FALSE) {
+			try {
+				$this->db = new PDO($dsn, $user, $password);
+			} catch (PDOException $e) {
+			}
+		}
+	}
+*/	
 }
 ?>

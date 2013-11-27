@@ -1,6 +1,8 @@
 <?php
+include_once 'AbstractResult.php';
 
-class EntityResult {
+class EntityResult extends AbstractResult {
+/*	
 	private $resut;
 	private $errorMessage;
 	private $entities;
@@ -31,21 +33,9 @@ class EntityResult {
 	public function setErrorMessage($value) {
 		$this->errorMessage = $value;
 	}
-
+*/
 	public function getData() {
-		$retval = array();
-
-		$retval['result'] = $this->result;
-		$retval['errorMessage'] = $this->errorMessage;
-		
-		$entityList = array();
-        $idx = 0;
-        foreach($this->entities as $key => $value) {
-                $entityList[$idx] = $value->getData();
-                $idx++;
-        }
-        $retval['entities'] = $entityList;
-		return $retval;
+		return parent::getWebData('entities');
 	}
 
 }

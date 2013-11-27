@@ -19,24 +19,28 @@ class JotWsdl {
 		
 		$server->register('getAllKeys',
 			array('token' => 'xsd:string'),
-			array('retval' => 'tns:EntityResult'));
+			array('retval' => 'tns:SearchKeyResult'));
 		
 		$server->register('getByDate',
 			array('token' => 'xsd:string', 'startDate' => 'xsd:string', 'endDate' => 'xsd:string'),
-			array('retval' => 'tns:EntityResult'));
+			array('retval' => 'tns:SearchKeyResult'));
 	
 		$server->register('getByType',
 			array('token' => 'xsd:string', 'type' => 'xsd:string'),
-			array('retval' => 'tns:EntityResult'));
+			array('retval' => 'tns:SearchKeyResult'));
 		
 		$server->register('getEntity',
 			array('token' => 'xsd:string', 'key' => 'xsd:string'),
 			array('retval' => 'tns:EntityResult'));
 		
 		$server->register('getSharedEntity',
-			array('token' => 'xsd:string', 'fromShareWithUsername' => 'xsd:string'),
+			array('token' => 'xsd:string', 'key' => 'xsd:string', 'fromShareWithUsername' => 'xsd:string'),
 			array('retval' => 'tns:EntityResult'));
 		
+		$server->register('getSharedKeys',
+			array('token' => 'xsd:string'),
+			array('retval' => 'tns:SearchKeyResult'));
+			
 		$server->register('logon',
 			array('username' => 'xsd:string', 'password' => 'xsd:string'),
 			array('retval' => 'xsd:string'));
@@ -73,8 +77,6 @@ class JotWsdl {
 		$server->wsdl->addComplexType('Entity', 'entity', 'struct', 'all', '',
 		array(
 			'key' => array('name' => 'key', 'type' => 'xsd:string'),
-			'item_memory_bytes' => array('name' => 'item_memory_bytes', 'type' => 'xsd:int'),
-			'modified' => array('name' => 'modified', 'type' => 'xsd:string'),
 			'items' => array('name' => 'items', 'type' => 'tns:ArrayOfEntityItems')));
 		
 		$server->wsdl->addComplexType('ArrayOfEntities', 'entityList', 'array', '', 'SOAP-ENC:Array',
@@ -89,6 +91,26 @@ class JotWsdl {
 			'result' => array('name' => 'result', 'type' => 'xsd:int'),
 			'errorMessage' => array('name' => 'errorMessage', 'type' => 'xsd:string'),
 			'entities' => array('name' => 'entities', 'type' => 'tns:ArrayOfEntities')));
+		
+		$server->wsdl->addComplexType('SearchKeyItem', 'searchKeyItem', 'struct', 'all', '',
+		array(
+			'key' => array('name' => 'key', 'type' => 'xsd:string'),
+			'owner' => array('name' => 'owner', 'type' => 'xsd:string'),
+			'item_memory_bytes' => array('name' => 'item_memory_bytes', 'type' => 'xsd:int'),
+			'modified' => array('name' => 'modified', 'type' => 'xsd:string')));
+		
+		$server->wsdl->addComplexType('ArrayOfSearchKeyItems', 'searchKeyItemList', 'array', '', 'SOAP-ENC:Array',
+			array(), 
+			array(
+				array('ref' => 'SOAP-ENC:arrayType', 'wsdl:arrayType' => 'tns:SearchKeyItem[]'),
+				),'tns:SearchKeyItem'
+		);
+	
+		$server->wsdl->addComplexType('SearchKeyResult', 'searchkeyresult', 'struct', 'all', '',
+		array(
+			'result' => array('name' => 'result', 'type' => 'xsd:int'),
+			'errorMessage' => array('name' => 'errorMessage', 'type' => 'xsd:string'),
+			'searchKeyItems' => array('name' => 'searchKeyItems', 'type' => 'tns:ArrayOfSearchKeyItems')));
 		
 		JotWsdl::registerMethods($server);
 	}

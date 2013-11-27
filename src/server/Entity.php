@@ -79,7 +79,7 @@ class Entity {
 		$entity->setKey($data['key']);
 		$items = $data['items'];
 		foreach($items as $key1 => $value1) {
-			$item = EntityItem::getItemFromData($value1);
+			$item = EntityItem::getItemFromData($value1);			
 			$entity->addItem($item);
 		}
 		return $entity;

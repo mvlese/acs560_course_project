@@ -1,9 +1,10 @@
 <?php
-include_once "logger.php";
-include_once "EntityItem.php";
-include_once "Entity.php";
-include_once "EntityResult.php";
-include_once "BusinessLayer.php";
+require_once "logger.php";
+require_once "EntityItem.php";
+require_once "Entity.php";
+require_once "EntityResult.php";
+require_once "BusinessLayer.php";
+require_once 'SearchItem.php';
 require_once 'htmlpurifier.library/HTMLPurifier.auto.php';
 
 $config = HTMLPurifier_Config::createDefault();
@@ -169,6 +170,21 @@ function getSharedEntity($token, $entity, $fromShareWithUsername)
 
 	$msg = "not implemented";
 	$retval->setErrorMessage($msg);
+	
+	return $retval;
+}
+
+
+function getSharedKeys($token)
+{
+	global $businessLayer;
+	
+	# SearchKeyResult type
+	$retval = new stdClass();
+	$retval->result = -1;
+	$retval->errorMessage = "not implemented";
+	$retval->searchKeyItems = array();
+
 	
 	return $retval;
 }
