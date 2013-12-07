@@ -228,7 +228,7 @@ class BusinessLayer {
 		try{
 			$this->db->startTransaction();
 			$entity = $this->db->getEntity($token, $key);
-			$rslt->addEntity($entity);
+			$rslt->addItem($entity);
 			$rslt->setResult(0);
 			
 			$this->db->commit();
