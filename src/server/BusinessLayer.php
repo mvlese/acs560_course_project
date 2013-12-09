@@ -323,6 +323,29 @@ class BusinessLayer {
 				
 		return $rslt;
 	}
+
+	public function getSharedKeys($token) {
+		$rslt = new SearchKeyResult();
+
+		$rslt->setResult(-1);
+		try{
+			$this->db->startTransaction();
+			$arr = $this->db->getSharedKeys($token);
+			$this->db->commit();
+			$rslt->setResult(0);
+			foreach($arr as $value) {
+				$rslt->addItem($value);
+			}
+		}
+		catch(Exception $ex) {
+			$this->db->rollback();
+			$rslt = new SearchKeyResult();
+			$rslt->setResult(-1);
+		}
+			
+		return $rslt;
+	}
+	
 	
 	private function isUserValid($username, $password, $doNotCheckIsActive = false) {
 		$rslt = false;

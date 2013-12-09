@@ -179,14 +179,14 @@ function getSharedKeys($token)
 {
 	global $businessLayer;
 	
-	# SearchKeyResult type
-	$retval = new stdClass();
-	$retval->result = -1;
-	$retval->errorMessage = "not implemented";
-	$retval->searchKeyItems = array();
+	logger("entering getSharedKeys\n");
 
-	
-	return $retval;
+	# SearchKeyResult type
+	$retval = $businessLayer->getSharedKeys(prepareValue($token));
+
+	logger("leaving getSharedKeys\n");
+
+	return $retval->getData();	
 }
 
 

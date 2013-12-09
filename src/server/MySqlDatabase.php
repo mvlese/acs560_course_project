@@ -389,6 +389,42 @@ class MySqlDatabase implements IDatabase {
 		return $rslt;
 	}
 	
+	# Return a SearchItem array
+	public function getSharedKeys($token) {
+		$rslt = array();
+		
+		$params = array(':token' => $token);
+		# find entities that has user that has token
+		# and that has items that has type = input type.
+		$sth = $this->db->prepare(
+			'select u2.username as owner, e.title, e.last_modified, ( ' . 
+			'   select sum(getSize(ei.identity_items, ei.identities)) ' . 
+			'   from entity_items ei ' .
+			'   inner join item_types it on it.iditem_types=ei.iditem_types where ei.identities=e.identities) as items_size ' . 
+			'from shared_entities se ' .
+			'inner join users u on u.iduser=se.to_userid ' . 
+			'inner join users u2 on u2.iduser=se.from_userid ' . 
+			'inner join entity_items ei on ei.identity_items = se.identity_items ' . 
+			'inner join entities e on (e.identities = se.identities and ei.identities = e.identities) ' . 
+			'inner join item_types it on it.iditem_types=ei.iditem_types ' .
+			'where u.token = :token order by last_modified desc'		);
+		$sth->execute($params);
+		$idx = 0;
+		while ($arr = $sth->fetch(PDO::FETCH_ASSOC)) {
+			$searchItem = new SearchItem();
+			$searchItem->setOwner($arr['owner']);
+			$searchItem->setKey($arr['title']);
+			$searchItem->setModified($arr['last_modified']);
+			$searchItem->setItemSize($arr['items_size']);
+			$rslt[$idx] = $searchItem;
+			$idx++;
+		}
+		$sth->closeCursor();
+
+		return $rslt;
+	}
+	
+	
 	public function startTransaction() {
 		$this->db->query("SET autocommit=0;");
 		$this->db->query("start transaction;");
